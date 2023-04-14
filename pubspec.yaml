@@ -1,0 +1,67 @@
+name: timetable
+description: Приложение для получения и редактирования расписания занятий для учащихся техникумов.
+
+publish_to: 'none'
+
+version: 2.0.4+5
+
+environment:
+  sdk: '>=2.18.2 <3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  provider: ^6.0.3
+  backdrop: ^0.8.1
+  requests: ^4.7.0
+  animate_do: ^3.0.2
+  collection: ^1.16.0
+  week_of_year: ^2.0.0
+  easy_refresh: ^3.0.4+2
+  dropdown_button2: ^1.8.5
+  shared_preferences: ^2.0.15
+  swipeable_page_route: ^0.3.0
+  flutter_staggered_animations: ^1.1.1
+  flutter_animation_progress_bar: ^2.3.1
+
+  path_provider: ^2.0.11
+  device_info_plus: ^8.0.0
+  package_info_plus: ^3.0.1
+  flutter_downloader: ^1.8.4
+  permission_handler: ^10.2.0
+
+  infinite_scroll_pagination: ^3.2.0
+  dynamic_icon_flutter: ^0.0.7
+  introduction_screen: ^3.0.2
+  automatic_animated_list: ^1.1.0
+  auto_animated_list: ^1.0.3
+  responsive_sizer: ^3.1.1
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^2.0.0
+  import_sorter: ^4.6.0
+  flutter_launcher_icons: ^0.11.0
+  flutter_native_splash: ^2.2.9
+
+flutter_icons:
+  android: true
+  image_path: "assets/icon.png"
+
+flutter_native_splash:
+  color: "#141414"
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/icon.png
+    - assets/ca/lets-encrypt-r3.pem
+  fonts:
+    - family: Rubik
+      fonts:
+        - asset: fonts/Rubik-Regular.ttf
