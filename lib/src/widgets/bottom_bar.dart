@@ -4,21 +4,6 @@ library bottom_bar;
 import 'package:flutter/material.dart';
 
 class BottomBar extends StatelessWidget {
-  const BottomBar({
-    Key? key,
-    required this.selectedIndex,
-    this.useCustomIndex,
-    this.curve = Curves.easeOutQuint,
-    this.duration = const Duration(milliseconds: 750),
-    this.height,
-    required this.backgroundColor,
-    this.showActiveBackgroundColor = true,
-    this.itemPadding = const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-    required this.items,
-    required this.onTap,
-    this.textStyle = const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-  }) : super(key: key);
-
   final int selectedIndex;
 
   /// Defines whether it is possible to use custom index
@@ -54,6 +39,21 @@ class BottomBar extends StatelessWidget {
 
   /// `TextStyle` of title
   final TextStyle textStyle;
+
+  const BottomBar({
+    Key? key,
+    required this.selectedIndex,
+    this.useCustomIndex,
+    this.curve = Curves.easeOutQuint,
+    this.duration = const Duration(milliseconds: 750),
+    this.height,
+    required this.backgroundColor,
+    this.showActiveBackgroundColor = true,
+    this.itemPadding = const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+    required this.items,
+    required this.onTap,
+    this.textStyle = const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

@@ -2,18 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-
 // Package imports:
 import 'package:shared_preferences/shared_preferences.dart';
-
-enum ThemeType {
-  system,
-  light,
-  dark,
-  snow,
-  calm,
-  random,
-}
 
 Map<String, ThemeType> _themeTypes = {
   'system': ThemeType.system,
@@ -26,20 +16,7 @@ Map<String, ThemeType> _themeTypes = {
 
 class ThemeProvider extends ChangeNotifier {
   static late SharedPreferences _prefs;
-  static Future<void> initialize() async {
-    _prefs = await SharedPreferences.getInstance();
-  }
-
   ThemeType? _currentThemeType;
-  ThemeType get currentThemeType => _currentThemeType ?? ThemeType.system;
-
-  String get currentThemeName => _themeTypes.keys.firstWhere((key) => _themeTypes[key] == currentThemeType);
-  ThemeData get currentTheme => _themes[currentThemeType]!();
-
-  ThemeProvider() {
-    String? savedTheme = _prefs.getString('theme') ?? 'system';
-    setThemeByName(savedTheme);
-  }
 
   late final Map<ThemeType, ThemeData Function()> _themes = {
     ThemeType.system: () => SchedulerBinding.instance.window.platformBrightness == Brightness.dark ? darkTheme : lightTheme,
@@ -49,33 +26,22 @@ class ThemeProvider extends ChangeNotifier {
     ThemeType.calm: () => calmTheme,
     ThemeType.random: () => randomTheme,
   };
-
-  void setThemeByName(String themeName) {
-    setTheme(_themeTypes[themeName] ?? currentThemeType);
-  }
-
-  void setTheme(ThemeType themeType) {
-    _currentThemeType = themeType;
-    _prefs.setString('theme', currentThemeName);
-    notifyListeners();
-  }
-
   final ThemeData _defaultTheme = ThemeData(
     fontFamily: 'Rubik',
     primarySwatch: Colors.blue,
     visualDensity: VisualDensity.standard,
     splashFactory: InkRipple.splashFactory,
     textTheme: const TextTheme(
-      headline1: TextStyle(fontWeight: FontWeight.bold),
-      headline2: TextStyle(fontWeight: FontWeight.bold),
-      headline4: TextStyle(fontWeight: FontWeight.bold),
-      headline5: TextStyle(fontWeight: FontWeight.bold),
-      headline6: TextStyle(fontWeight: FontWeight.bold),
-      subtitle1: TextStyle(fontWeight: FontWeight.bold),
-      bodyText1: TextStyle(fontWeight: FontWeight.bold),
-      bodyText2: TextStyle(fontWeight: FontWeight.bold),
-      subtitle2: TextStyle(fontWeight: FontWeight.bold),
-      overline: TextStyle(fontWeight: FontWeight.bold),
+      displayLarge: TextStyle(fontWeight: FontWeight.bold),
+      displayMedium: TextStyle(fontWeight: FontWeight.bold),
+      headlineMedium: TextStyle(fontWeight: FontWeight.bold),
+      headlineSmall: TextStyle(fontWeight: FontWeight.bold),
+      titleLarge: TextStyle(fontWeight: FontWeight.bold),
+      titleMedium: TextStyle(fontWeight: FontWeight.bold),
+      bodyLarge: TextStyle(fontWeight: FontWeight.bold),
+      bodyMedium: TextStyle(fontWeight: FontWeight.bold),
+      titleSmall: TextStyle(fontWeight: FontWeight.bold),
+      labelSmall: TextStyle(fontWeight: FontWeight.bold),
     ),
   );
 
@@ -116,7 +82,6 @@ class ThemeProvider extends ChangeNotifier {
       ),
     ),
   );
-
   late final ThemeData darkTheme = _defaultTheme.copyWith(
     brightness: Brightness.dark,
     colorScheme: const ColorScheme(
@@ -337,4 +302,38 @@ class ThemeProvider extends ChangeNotifier {
       ),
     ),
   );
+
+  ThemeProvider() {
+    String? savedTheme = _prefs.getString('theme') ?? 'system';
+    setThemeByName(savedTheme);
+  }
+
+  ThemeData get currentTheme => _themes[currentThemeType]!();
+
+  String get currentThemeName => _themeTypes.keys.firstWhere((key) => _themeTypes[key] == currentThemeType);
+
+  ThemeType get currentThemeType => _currentThemeType ?? ThemeType.system;
+
+  void setTheme(ThemeType themeType) {
+    _currentThemeType = themeType;
+    _prefs.setString('theme', currentThemeName);
+    notifyListeners();
+  }
+
+  void setThemeByName(String themeName) {
+    setTheme(_themeTypes[themeName] ?? currentThemeType);
+  }
+
+  static Future<void> initialize() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
+}
+
+enum ThemeType {
+  system,
+  light,
+  dark,
+  snow,
+  calm,
+  random,
 }

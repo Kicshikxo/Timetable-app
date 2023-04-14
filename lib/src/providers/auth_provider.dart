@@ -3,20 +3,12 @@ import 'dart:io';
 
 // Flutter imports:
 import 'package:flutter/material.dart';
-
 // Package imports:
 import 'package:requests/requests.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String apiHost = 'https://api.kicshikxo.ru';
 // const String apiHost = 'http://localhost:3000';
-
-enum LoginStatus {
-  ok,
-  error,
-  socketError,
-  unauthorized,
-}
 
 class AuthInfo {
   final bool isAuthenticated;
@@ -33,13 +25,6 @@ class AuthInfo {
     this.isAdmin = false,
   });
 
-  AuthInfo.unauthorized()
-      : isAuthenticated = false,
-        authToken = '',
-        groupName = '',
-        groupAcademicYear = '',
-        isAdmin = false;
-
   AuthInfo.authorized({
     required this.authToken,
     required this.groupName,
@@ -54,6 +39,13 @@ class AuthInfo {
         groupAcademicYear = prefs.getString('groupAcademicYear') ?? '',
         isAdmin = prefs.getBool('wasAdmin') ?? false;
 
+  AuthInfo.unauthorized()
+      : isAuthenticated = false,
+        authToken = '',
+        groupName = '',
+        groupAcademicYear = '',
+        isAdmin = false;
+
   void save(SharedPreferences prefs) async {
     prefs.setBool('wasAuthorized', isAuthenticated);
     prefs.setString('authToken', authToken);
@@ -63,39 +55,42 @@ class AuthInfo {
   }
 }
 
-class Group {
-  final String id;
-  final String name;
-  final String academicYear;
-
-  Group({
-    required this.id,
-    required this.name,
-    required this.academicYear,
-  });
-
-  Group.fromJson(Map<String, dynamic> json)
-      : id = json['id'],
-        name = json['name'],
-        academicYear = json['academicYear'];
-
-  @override
-  String toString() {
-    return '$id ($name-$academicYear)';
-  }
-}
-
 class AuthProvider extends ChangeNotifier {
   static late SharedPreferences _prefs;
-  static Future<void> initialize() async {
-    _prefs = await SharedPreferences.getInstance();
-  }
-
   AuthInfo _authInfo = AuthInfo.unauthorized();
-  AuthInfo get authInfo => _authInfo;
 
   AuthProvider() {
     _authInfo = AuthInfo.fromPrefs(_prefs);
+  }
+  AuthInfo get authInfo => _authInfo;
+
+  Future<LoginStatus> checkLogin({String? authToken}) async {
+    try {
+      final response = await Requests.get(
+        '$apiHost/v2/timetable/auth/check-login',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ${authToken ?? _authInfo.authToken}',
+        },
+      );
+
+      if (response.statusCode == HttpStatus.ok) {
+        final Map<String, dynamic> jsonData = response.json();
+        if (jsonData['valid'] != true) {
+          return LoginStatus.unauthorized;
+        }
+        return LoginStatus.ok;
+      } else if (response.statusCode == HttpStatus.unauthorized) {
+        logout();
+        return LoginStatus.unauthorized;
+      }
+    } on SocketException {
+      return LoginStatus.socketError;
+    } catch (e) {
+      return LoginStatus.error;
+    }
+
+    return LoginStatus.error;
   }
 
   Future<List<String>?> getAcademicYears() async {
@@ -140,6 +135,12 @@ class AuthProvider extends ChangeNotifier {
     return null;
   }
 
+  void logout() {
+    _authInfo = AuthInfo.unauthorized();
+    _authInfo.save(_prefs);
+    notifyListeners();
+  }
+
   Future<LoginStatus> tryLogin({required String group, required String academicYear, String? password}) async {
     try {
       final response = await Requests.post(
@@ -177,38 +178,36 @@ class AuthProvider extends ChangeNotifier {
     return LoginStatus.error;
   }
 
-  Future<LoginStatus> checkLogin({String? authToken}) async {
-    try {
-      final response = await Requests.get(
-        '$apiHost/v2/timetable/auth/check-login',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ${authToken ?? _authInfo.authToken}',
-        },
-      );
-
-      if (response.statusCode == HttpStatus.ok) {
-        final Map<String, dynamic> jsonData = response.json();
-        if (jsonData['valid'] != true) {
-          return LoginStatus.unauthorized;
-        }
-        return LoginStatus.ok;
-      } else if (response.statusCode == HttpStatus.unauthorized) {
-        logout();
-        return LoginStatus.unauthorized;
-      }
-    } on SocketException {
-      return LoginStatus.socketError;
-    } catch (e) {
-      return LoginStatus.error;
-    }
-
-    return LoginStatus.error;
+  static Future<void> initialize() async {
+    _prefs = await SharedPreferences.getInstance();
   }
+}
 
-  void logout() {
-    _authInfo = AuthInfo.unauthorized();
-    _authInfo.save(_prefs);
-    notifyListeners();
+class Group {
+  final String id;
+  final String name;
+  final String academicYear;
+
+  Group({
+    required this.id,
+    required this.name,
+    required this.academicYear,
+  });
+
+  Group.fromJson(Map<String, dynamic> json)
+      : id = json['id'],
+        name = json['name'],
+        academicYear = json['academicYear'];
+
+  @override
+  String toString() {
+    return '$id ($name-$academicYear)';
   }
+}
+
+enum LoginStatus {
+  ok,
+  error,
+  socketError,
+  unauthorized,
 }

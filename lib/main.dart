@@ -4,10 +4,8 @@ import 'dart:io';
 // Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 // Package imports:
 import 'package:provider/provider.dart';
-
 // Project imports:
 import 'package:timetable/src/app.dart';
 import 'package:timetable/src/providers/auth_provider.dart';

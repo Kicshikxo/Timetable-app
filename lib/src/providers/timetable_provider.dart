@@ -6,30 +6,12 @@ import 'dart:math';
 // Flutter imports:
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
 // Package imports:
 import 'package:requests/requests.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:week_of_year/week_of_year.dart';
 
 const String apiHost = 'https://api.kicshikxo.ru';
-// const String apiHost = 'http://localhost:3000';
-
-class Week {
-  late final String id;
-  late final List<Day> days;
-
-  Week({required this.id, required this.days});
-
-  Week.fromJson(Map<String, dynamic> json)
-      : id = json['id'],
-        days = [for (var day in json['days']) Day.fromJson(day)];
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'days': [for (Day day in days) day.toJson()],
-      };
-}
 
 class Day {
   late final DateTime date;
@@ -68,12 +50,16 @@ class Lesson {
 
 class TimetableProvider extends ChangeNotifier {
   static late SharedPreferences _prefs;
-  static Future<void> initialize() async {
-    _prefs = await SharedPreferences.getInstance();
-  }
-
   List<Week> _weeks = [];
-  List<Week> get weeks => _weeks;
+
+  int _totalWeeksCount = 0;
+  TimetableProvider() {
+    String? savedWeeks = _prefs.getString('timetable');
+    if (savedWeeks != null) {
+      _weeks = [for (var week in json.decode(savedWeeks)) Week.fromJson(week)];
+      notifyListeners();
+    }
+  }
 
   String get currentWeekId {
     DateTime today = DateTime.now();
@@ -88,17 +74,14 @@ class TimetableProvider extends ChangeNotifier {
     // return null;
   }
 
-  int _totalWeeksCount = 0;
+  bool get hasMoreWeeks => _weeks.length < _totalWeeksCount;
   int get totalWeeksCount => _totalWeeksCount;
 
-  bool get hasMoreWeeks => _weeks.length < _totalWeeksCount;
+  List<Week> get weeks => _weeks;
 
-  TimetableProvider() {
-    String? savedWeeks = _prefs.getString('timetable');
-    if (savedWeeks != null) {
-      _weeks = [for (var week in json.decode(savedWeeks)) Week.fromJson(week)];
-      notifyListeners();
-    }
+  void clearWeeks() {
+    _weeks.clear();
+    _prefs.remove('timetable');
   }
 
   Future<bool> fetchWeeks({required String authToken}) async {
@@ -163,8 +146,25 @@ class TimetableProvider extends ChangeNotifier {
     _prefs.setString('timetable', json.encode([for (Week week in _weeks.sublist(0, min(_weeks.length, limit))) week.toJson()]));
   }
 
-  void clearWeeks() {
-    _weeks.clear();
-    _prefs.remove('timetable');
+  static Future<void> initialize() async {
+    _prefs = await SharedPreferences.getInstance();
   }
+}
+
+// const String apiHost = 'http://localhost:3000';
+
+class Week {
+  late final String id;
+  late final List<Day> days;
+
+  Week({required this.id, required this.days});
+
+  Week.fromJson(Map<String, dynamic> json)
+      : id = json['id'],
+        days = [for (var day in json['days']) Day.fromJson(day)];
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'days': [for (Day day in days) day.toJson()],
+      };
 }

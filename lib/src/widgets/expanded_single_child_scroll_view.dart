@@ -2,14 +2,14 @@
 import 'package:flutter/material.dart';
 
 class ExpandedSingleChildScrollView extends StatelessWidget {
+  final Widget? child;
+
+  final ScrollPhysics physics;
   const ExpandedSingleChildScrollView({
     super.key,
     this.child,
     this.physics = const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
   });
-
-  final Widget? child;
-  final ScrollPhysics physics;
 
   @override
   Widget build(BuildContext context) {

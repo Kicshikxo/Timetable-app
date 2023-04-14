@@ -5,12 +5,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-
 // Package imports:
 import 'package:provider/provider.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:swipeable_page_route/swipeable_page_route.dart';
-
 // Project imports:
 import 'package:timetable/src/bottom_sheets/settings_bottom_sheet.dart';
 import 'package:timetable/src/pages/login_page.dart';
@@ -34,43 +32,6 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     '/timetable': (BuildContext context) => const TimetablePage(),
     '/test': (BuildContext context) => const TestPage(),
   };
-
-  @override
-  void initState() {
-    super.initState();
-
-    _checkLogin();
-
-    SchedulerBinding.instance.addPostFrameCallback(
-      (timeStamp) {
-        if (context.read<SettingsProvider>().settings.checkForUpdates) {
-          context.read<UpdateProvider>().checkForUpdateAndShowRequest(_navigatorKey.currentContext!);
-        }
-      },
-    );
-
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void didChangePlatformBrightness() {
-    super.didChangePlatformBrightness();
-    if (context.read<ThemeProvider>().currentThemeType == ThemeType.system && mounted) {
-      setState(() {});
-    }
-  }
-
-  void _checkLogin() async {
-    if (context.read<AuthProvider>().authInfo.isAuthenticated || context.read<AuthProvider>().authInfo.authToken.isNotEmpty) {
-      LoginStatus loginStatus = await context.read<AuthProvider>().checkLogin();
-      if (loginStatus == LoginStatus.unauthorized) {
-        if (mounted) {
-          context.read<AuthProvider>().logout();
-          _navigatorKey.currentState!.pushNamedAndRemoveUntil('/login', (route) => false);
-        }
-      }
-    }
-  }
 
   final _navigatorKey = GlobalKey<NavigatorState>();
 
@@ -172,5 +133,42 @@ class _AppState extends State<App> with WidgetsBindingObserver {
         },
       ),
     );
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    super.didChangePlatformBrightness();
+    if (context.read<ThemeProvider>().currentThemeType == ThemeType.system && mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _checkLogin();
+
+    SchedulerBinding.instance.addPostFrameCallback(
+      (timeStamp) {
+        if (context.read<SettingsProvider>().settings.checkForUpdates) {
+          context.read<UpdateProvider>().checkForUpdateAndShowRequest(_navigatorKey.currentContext!);
+        }
+      },
+    );
+
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  void _checkLogin() async {
+    if (context.read<AuthProvider>().authInfo.isAuthenticated || context.read<AuthProvider>().authInfo.authToken.isNotEmpty) {
+      LoginStatus loginStatus = await context.read<AuthProvider>().checkLogin();
+      if (loginStatus == LoginStatus.unauthorized) {
+        if (mounted) {
+          context.read<AuthProvider>().logout();
+          _navigatorKey.currentState!.pushNamedAndRemoveUntil('/login', (route) => false);
+        }
+      }
+    }
   }
 }

@@ -1,17 +1,20 @@
 // Flutter imports:
 import 'package:flutter/material.dart';
-
 // Package imports:
 import 'package:flutter_animation_progress_bar/flutter_animation_progress_bar.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:provider/provider.dart';
-
 // Project imports:
 import 'package:timetable/src/providers/update_provider.dart';
 
 class UpdateBottomSheet {
   static bool _isShown = false;
   static bool get isShown => _isShown;
+
+  static void close(BuildContext context) {
+    Navigator.of(context).maybePop();
+    _isShown = false;
+  }
 
   static Future<void> show(BuildContext context, {VoidCallback? whenComplete}) async {
     if (_isShown) return;
@@ -31,17 +34,56 @@ class UpdateBottomSheet {
     _isShown = false;
   }
 
-  static void close(BuildContext context) {
-    Navigator.of(context).maybePop();
-    _isShown = false;
-  }
-
   static Future<void> toggle(BuildContext context, {VoidCallback? whenComplete}) async {
     if (_isShown) {
       close(context);
     } else {
       show(context, whenComplete: whenComplete);
     }
+  }
+}
+
+class _ConfirmExitDialog extends StatelessWidget {
+  const _ConfirmExitDialog({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      contentPadding: const EdgeInsets.only(top: 20),
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      title: Text(
+        'Отменить обновление?',
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      // content: const _ListTileDivider(),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(
+            'Нет',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(
+            'Да',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.error,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -182,50 +224,6 @@ class _UpdateBottomSheet extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ConfirmExitDialog extends StatelessWidget {
-  const _ConfirmExitDialog({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      contentPadding: const EdgeInsets.only(top: 20),
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      title: Text(
-        'Отменить обновление?',
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      // content: const _ListTileDivider(),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text(
-            'Нет',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: Text(
-            'Да',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.error,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

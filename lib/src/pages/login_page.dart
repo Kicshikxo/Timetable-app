@@ -1,11 +1,9 @@
 // Flutter imports:
-import 'package:flutter/material.dart';
-
 // Package imports:
 import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
-
 // Project imports:
 import 'package:timetable/src/bottom_sheets/settings_bottom_sheet.dart';
 import 'package:timetable/src/providers/auth_provider.dart';
@@ -19,6 +17,104 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
+class _LoginDropdownButtonFormField<T> extends StatelessWidget {
+  final T? value;
+
+  final List<DropdownMenuItem<T>>? items;
+  final String? Function(T?)? validator;
+  final void Function(T?)? onChanged;
+  final String? hintText;
+  final bool isLoading;
+  final Icon? prefixIcon;
+  const _LoginDropdownButtonFormField({
+    Key? key,
+    required this.value,
+    required this.items,
+    this.validator,
+    this.onChanged,
+    this.hintText,
+    this.isLoading = false,
+    this.prefixIcon,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField2<T>(
+      value: value,
+      items: items,
+      validator: validator,
+      onChanged: onChanged,
+      iconEnabledColor: Theme.of(context).colorScheme.onSurface,
+      iconDisabledColor: Theme.of(context).colorScheme.onSurface,
+      selectedItemHighlightColor: Theme.of(context).highlightColor,
+      decoration: InputDecoration(
+        errorStyle: const TextStyle(fontWeight: FontWeight.bold),
+        enabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.onSurface,
+            width: 2,
+          ),
+        ),
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.onSurface,
+            width: 2,
+          ),
+        ),
+        errorBorder: UnderlineInputBorder(
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.error,
+            width: 2,
+          ),
+        ),
+        disabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+            width: 2,
+          ),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
+        prefixIcon: isLoading
+            ? SizedBox(
+                width: 24,
+                height: 24,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: CircularProgressIndicator(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    strokeWidth: 3,
+                  ),
+                ),
+              )
+            : prefixIcon != null
+                ? Icon(
+                    prefixIcon!.icon,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    size: 28,
+                  )
+                : null,
+      ),
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface,
+        fontWeight: FontWeight.bold,
+        fontSize: 18,
+      ),
+      hint: Text(
+        hintText ?? '',
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+      ),
+      dropdownDecoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+      ),
+      dropdownOverButton: true,
+      isExpanded: true,
+      iconSize: 24,
+    );
+  }
+}
+
 class _LoginPageState extends State<LoginPage> {
   List<String> _academicYears = [];
   List<Group> _groups = [];
@@ -30,85 +126,8 @@ class _LoginPageState extends State<LoginPage> {
   bool _showPassword = false;
   bool _loading = false;
 
-  @override
-  void initState() {
-    super.initState();
-
-    _updateAcademicYears();
-  }
-
-  Future<void> _updateAcademicYears({bool clear = true}) async {
-    if (clear) {
-      _academicYears.clear();
-      _selectedAcademicYear = null;
-      _formKey.currentState?.validate();
-    }
-
-    final newAcademicYears = await context.read<AuthProvider>().getAcademicYears();
-
-    if (newAcademicYears == null) {
-      if (mounted) {
-        context.read<MessangerProvider>().showSnackBar(context: context, text: 'Ошибка загрузки данных');
-      }
-    } else {
-      setState(() {
-        _academicYears = newAcademicYears;
-      });
-    }
-  }
-
-  Future<void> _updateGroups(String academicYear, {bool clear = true}) async {
-    if (clear) {
-      _groups.clear();
-      _selectedGroup = null;
-      _formKey.currentState?.validate();
-    }
-
-    final newGroups = await context.read<AuthProvider>().getGroups(academicYear: academicYear);
-
-    if (newGroups == null) {
-      if (mounted) {
-        context.read<MessangerProvider>().showSnackBar(context: context, text: 'Ошибка загрузки данных');
-      }
-    } else {
-      setState(() {
-        _groups = newGroups;
-        if (_selectedGroup != null && _groups.any((group) => group.id == _selectedGroup!.id)) {
-          _selectedGroup = _groups.firstWhere((group) => group.id == _selectedGroup!.id);
-        }
-      });
-    }
-  }
-
-  Future<void> _updateAll() async {
-    await _updateAcademicYears(clear: false);
-    if (_selectedAcademicYear != null) {
-      await _updateGroups(_selectedAcademicYear!, clear: false);
-    }
-  }
-
-  Future<void> _tryLogin() async {
-    if (_formKey.currentState!.validate() && !_loading && _selectedAcademicYear != null && _selectedGroup != null) {
-      setState(() => _loading = true);
-      LoginStatus loginStatus = await context.read<AuthProvider>().tryLogin(
-            group: _selectedGroup!.name,
-            academicYear: _selectedGroup!.academicYear,
-            password: _loginAsAdmin ? _passwordController.text : null,
-          );
-      if (loginStatus == LoginStatus.ok) {
-        if (mounted) {
-          Navigator.of(context).pushNamedAndRemoveUntil('/timetable', (route) => false);
-        }
-      } else {
-        if (mounted) {
-          context.read<MessangerProvider>().showSnackBar(context: context, text: 'Ошибка входа');
-        }
-        setState(() => _loading = false);
-      }
-    }
-  }
-
   final _formKey = GlobalKey<FormState>();
+
   final _passwordController = TextEditingController();
 
   @override
@@ -379,107 +398,95 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-}
-
-class _LoginDropdownButtonFormField<T> extends StatelessWidget {
-  const _LoginDropdownButtonFormField({
-    Key? key,
-    required this.value,
-    required this.items,
-    this.validator,
-    this.onChanged,
-    this.hintText,
-    this.isLoading = false,
-    this.prefixIcon,
-  }) : super(key: key);
-
-  final T? value;
-  final List<DropdownMenuItem<T>>? items;
-  final String? Function(T?)? validator;
-  final void Function(T?)? onChanged;
-  final String? hintText;
-  final bool isLoading;
-  final Icon? prefixIcon;
 
   @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField2<T>(
-      value: value,
-      items: items,
-      validator: validator,
-      onChanged: onChanged,
-      iconEnabledColor: Theme.of(context).colorScheme.onSurface,
-      iconDisabledColor: Theme.of(context).colorScheme.onSurface,
-      selectedItemHighlightColor: Theme.of(context).highlightColor,
-      decoration: InputDecoration(
-        errorStyle: const TextStyle(fontWeight: FontWeight.bold),
-        enabledBorder: UnderlineInputBorder(
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.onSurface,
-            width: 2,
-          ),
-        ),
-        focusedBorder: UnderlineInputBorder(
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.onSurface,
-            width: 2,
-          ),
-        ),
-        errorBorder: UnderlineInputBorder(
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.error,
-            width: 2,
-          ),
-        ),
-        disabledBorder: UnderlineInputBorder(
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-            width: 2,
-          ),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
-        prefixIcon: isLoading
-            ? SizedBox(
-                width: 24,
-                height: 24,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: CircularProgressIndicator(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    strokeWidth: 3,
-                  ),
-                ),
-              )
-            : prefixIcon != null
-                ? Icon(
-                    prefixIcon!.icon,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    size: 28,
-                  )
-                : null,
-      ),
-      style: TextStyle(
-        color: Theme.of(context).colorScheme.onSurface,
-        fontWeight: FontWeight.bold,
-        fontSize: 18,
-      ),
-      hint: Text(
-        hintText ?? '',
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-      ),
-      dropdownDecoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-      ),
-      dropdownOverButton: true,
-      isExpanded: true,
-      iconSize: 24,
-    );
+  void initState() {
+    super.initState();
+
+    _updateAcademicYears();
+  }
+
+  Future<void> _tryLogin() async {
+    if (_formKey.currentState!.validate() && !_loading && _selectedAcademicYear != null && _selectedGroup != null) {
+      setState(() => _loading = true);
+      LoginStatus loginStatus = await context.read<AuthProvider>().tryLogin(
+            group: _selectedGroup!.name,
+            academicYear: _selectedGroup!.academicYear,
+            password: _loginAsAdmin ? _passwordController.text : null,
+          );
+      if (loginStatus == LoginStatus.ok) {
+        if (mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil('/timetable', (route) => false);
+        }
+      } else {
+        if (mounted) {
+          context.read<MessangerProvider>().showSnackBar(context: context, text: 'Ошибка входа');
+        }
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  Future<void> _updateAcademicYears({bool clear = true}) async {
+    if (clear) {
+      _academicYears.clear();
+      _selectedAcademicYear = null;
+      _formKey.currentState?.validate();
+    }
+
+    final newAcademicYears = await context.read<AuthProvider>().getAcademicYears();
+
+    if (newAcademicYears == null) {
+      if (mounted) {
+        context.read<MessangerProvider>().showSnackBar(context: context, text: 'Ошибка загрузки данных');
+      }
+    } else {
+      setState(() {
+        _academicYears = newAcademicYears;
+      });
+    }
+  }
+
+  Future<void> _updateAll() async {
+    await _updateAcademicYears(clear: false);
+    if (_selectedAcademicYear != null) {
+      await _updateGroups(_selectedAcademicYear!, clear: false);
+    }
+  }
+
+  Future<void> _updateGroups(String academicYear, {bool clear = true}) async {
+    if (clear) {
+      _groups.clear();
+      _selectedGroup = null;
+      _formKey.currentState?.validate();
+    }
+
+    final newGroups = await context.read<AuthProvider>().getGroups(academicYear: academicYear);
+
+    if (newGroups == null) {
+      if (mounted) {
+        context.read<MessangerProvider>().showSnackBar(context: context, text: 'Ошибка загрузки данных');
+      }
+    } else {
+      setState(() {
+        _groups = newGroups;
+        if (_selectedGroup != null && _groups.any((group) => group.id == _selectedGroup!.id)) {
+          _selectedGroup = _groups.firstWhere((group) => group.id == _selectedGroup!.id);
+        }
+      });
+    }
   }
 }
 
 class _LoginPasswordTextFormField extends StatelessWidget {
+  final TextEditingController? controller;
+
+  final String? Function(String?)? validator;
+  final void Function(String)? onFieldSubmitted;
+  final bool obscureText;
+  final Icon? prefixIcon;
+  final Widget? suffixIcon;
+  final String? hintText;
   const _LoginPasswordTextFormField({
     Key? key,
     this.controller,
@@ -490,14 +497,6 @@ class _LoginPasswordTextFormField extends StatelessWidget {
     this.suffixIcon,
     this.hintText,
   }) : super(key: key);
-
-  final TextEditingController? controller;
-  final String? Function(String?)? validator;
-  final void Function(String)? onFieldSubmitted;
-  final bool obscureText;
-  final Icon? prefixIcon;
-  final Widget? suffixIcon;
-  final String? hintText;
 
   @override
   Widget build(BuildContext context) {

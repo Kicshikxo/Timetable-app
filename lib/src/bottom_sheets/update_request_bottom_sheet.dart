@@ -2,15 +2,13 @@
 import 'dart:io';
 import 'dart:ui';
 
-// Flutter imports:
-import 'package:flutter/material.dart';
-
 // Package imports:
 import 'package:device_info_plus/device_info_plus.dart';
+// Flutter imports:
+import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-
 // Project imports:
 import 'package:timetable/src/bottom_sheets/update_bottom_sheet.dart';
 import 'package:timetable/src/providers/update_provider.dart';
@@ -18,6 +16,11 @@ import 'package:timetable/src/providers/update_provider.dart';
 class UpdateRequestBottomSheet {
   static bool _isShown = false;
   static bool get isShown => _isShown;
+
+  static void close(BuildContext context) {
+    Navigator.of(context).maybePop();
+    _isShown = false;
+  }
 
   static Future<void> show(BuildContext context, {String? newVersion, VoidCallback? whenComplete}) async {
     if (_isShown) return;
@@ -42,11 +45,6 @@ class UpdateRequestBottomSheet {
     _isShown = false;
   }
 
-  static void close(BuildContext context) {
-    Navigator.of(context).maybePop();
-    _isShown = false;
-  }
-
   static Future<void> toggle(BuildContext context, {String? newVersion, VoidCallback? whenComplete}) async {
     if (_isShown) {
       close(context);
@@ -57,14 +55,14 @@ class UpdateRequestBottomSheet {
 }
 
 class _UpdateRequestBottomSheet extends StatefulWidget {
+  final String? currentVersion;
+
+  final String? newVersion;
   const _UpdateRequestBottomSheet({
     Key? key,
     this.currentVersion,
     this.newVersion,
   }) : super(key: key);
-
-  final String? currentVersion;
-  final String? newVersion;
 
   @override
   State<_UpdateRequestBottomSheet> createState() => _UpdateRequestBottomSheetState();

@@ -3,11 +3,9 @@ import 'dart:io';
 
 // Flutter imports:
 import 'package:flutter/material.dart';
-
 // Package imports:
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
-
 // Project imports:
 import 'package:timetable/src/providers/auth_provider.dart';
 import 'package:timetable/src/providers/settings_provider.dart';
@@ -18,6 +16,11 @@ import 'package:timetable/src/providers/update_provider.dart';
 class SettingsBottomSheet {
   static bool _isShown = false;
   static bool get isShown => _isShown;
+
+  static void close(BuildContext context) {
+    Navigator.of(context).maybePop();
+    _isShown = false;
+  }
 
   static Future<void> show(BuildContext context, {VoidCallback? whenComplete}) async {
     if (_isShown) return;
@@ -33,11 +36,6 @@ class SettingsBottomSheet {
     _isShown = false;
   }
 
-  static void close(BuildContext context) {
-    Navigator.of(context).maybePop();
-    _isShown = false;
-  }
-
   static Future<void> toggle(BuildContext context, {VoidCallback? whenComplete}) async {
     if (_isShown) {
       close(context);
@@ -47,29 +45,73 @@ class SettingsBottomSheet {
   }
 }
 
-class _SettingsBottomSheet extends StatelessWidget {
-  const _SettingsBottomSheet({Key? key}) : super(key: key);
+class _AboutDialog extends StatelessWidget {
+  final PackageInfo packageInfo;
+
+  const _AboutDialog({
+    Key? key,
+    required this.packageInfo,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-      child: Material(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(4),
-        elevation: 4,
-        child: Wrap(
-          children: [
-            if (context.watch<AuthProvider>().authInfo.isAuthenticated) const _AuthInfoListTile(),
-            if (context.watch<AuthProvider>().authInfo.isAuthenticated) const _ListTileDivider(),
-            if (context.watch<AuthProvider>().authInfo.isAuthenticated && context.watch<AuthProvider>().authInfo.isAdmin)
-              const _OpenControlPageListTile(),
-            const _ConfigurationListTile(),
-            const _ThemeChoiceListTile(),
-            if (context.watch<AuthProvider>().authInfo.isAuthenticated) const _ExitListTile(),
-          ],
+    return AlertDialog(
+      titlePadding: const EdgeInsets.symmetric(vertical: 12),
+      contentPadding: EdgeInsets.zero,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      title: ListTile(
+        leading: const Image(
+          image: AssetImage('assets/icon.png'),
+        ),
+        minLeadingWidth: 0,
+        title: Text(
+          packageInfo.appName,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
+        ),
+        subtitle: Text(
+          '${packageInfo.version}\nCopyright © Kicshikxo, ${DateTime.now().year}',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const _ListTileDivider(),
+          const SizedBox(
+            height: 12,
+          ),
+          _SettingsListTile(
+            leading: Transform.scale(
+              scale: 1.5,
+              child: Icon(
+                Icons.info_outline_rounded,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ),
+            titleText: 'Приложение для получения и редактирования расписания занятий учащихся КТС',
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(
+            'Закрыть',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -113,40 +155,6 @@ class _AuthInfoListTile extends StatelessWidget {
         ),
       ),
       contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-    );
-  }
-}
-
-class _OpenControlPageListTile extends StatelessWidget {
-  const _OpenControlPageListTile({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return _SettingsListTile(
-      onTap: () {
-        Navigator.of(context).pop();
-        Navigator.of(context).pushNamed('/test');
-      },
-      leadingIcon: const Icon(Icons.edit_rounded),
-      titleText: 'Перейти в управление',
-      trailing: const Icon(Icons.chevron_right_rounded),
-    );
-  }
-}
-
-class _ConfigurationListTile extends StatelessWidget {
-  const _ConfigurationListTile({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return _SettingsListTile(
-      onTap: () => showDialog(
-        context: context,
-        builder: (context) => const _ConfigurationDialog(),
-      ),
-      leadingIcon: const Icon(Icons.tune),
-      titleText: 'Настройки приложения',
-      trailing: const Icon(Icons.chevron_right_rounded),
     );
   }
 }
@@ -302,67 +310,57 @@ class _ConfigurationDialog extends StatelessWidget {
   }
 }
 
-class _AboutDialog extends StatelessWidget {
-  const _AboutDialog({
-    Key? key,
-    required this.packageInfo,
-  }) : super(key: key);
+class _ConfigurationListTile extends StatelessWidget {
+  const _ConfigurationListTile({Key? key}) : super(key: key);
 
-  final PackageInfo packageInfo;
+  @override
+  Widget build(BuildContext context) {
+    return _SettingsListTile(
+      onTap: () => showDialog(
+        context: context,
+        builder: (context) => const _ConfigurationDialog(),
+      ),
+      leadingIcon: const Icon(Icons.tune),
+      titleText: 'Настройки приложения',
+      trailing: const Icon(Icons.chevron_right_rounded),
+    );
+  }
+}
+
+class _ConfirmExitDialog extends StatelessWidget {
+  const _ConfirmExitDialog({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      titlePadding: const EdgeInsets.symmetric(vertical: 12),
-      contentPadding: EdgeInsets.zero,
+      contentPadding: const EdgeInsets.only(top: 20),
       backgroundColor: Theme.of(context).colorScheme.surface,
-      title: ListTile(
-        leading: const Image(
-          image: AssetImage('assets/icon.png'),
-        ),
-        minLeadingWidth: 0,
-        title: Text(
-          packageInfo.appName,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
-        ),
-        subtitle: Text(
-          '${packageInfo.version}\nCopyright © Kicshikxo, ${DateTime.now().year}',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-          ),
+      title: Text(
+        'Выйти из группы?',
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontWeight: FontWeight.bold,
         ),
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const _ListTileDivider(),
-          const SizedBox(
-            height: 12,
-          ),
-          _SettingsListTile(
-            leading: Transform.scale(
-              scale: 1.5,
-              child: Icon(
-                Icons.info_outline_rounded,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-              ),
-            ),
-            titleText: 'Приложение для получения и редактирования расписания занятий учащихся КТС',
-          ),
-        ],
-      ),
+      // content: const _ListTileDivider(),
       actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(
+            'Нет',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
           child: Text(
-            'Закрыть',
+            'Да',
             style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
+              color: Theme.of(context).colorScheme.error,
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),
@@ -373,29 +371,243 @@ class _AboutDialog extends StatelessWidget {
   }
 }
 
-class _ThemeChoiceListTile extends StatelessWidget {
-  const _ThemeChoiceListTile({Key? key}) : super(key: key);
-
-  static Map<String, String> themesTranscription = {
-    'system': 'Как на устройстве',
-    'light': 'Светлая',
-    'dark': 'Тёмная',
-    'snow': 'Снежная',
-    'calm': 'Спокойная',
-    'random': 'Случайная',
-  };
+class _ExitListTile extends StatelessWidget {
+  const _ExitListTile({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return _SettingsListTile(
-      onTap: () => showDialog(
-        context: context,
-        builder: (context) => const _ThemeChoiceDialog(),
+      onTap: () {
+        showDialog<bool>(context: context, builder: (context) => const _ConfirmExitDialog()).then((value) {
+          if (value == true) {
+            context.read<AuthProvider>().logout();
+            context.read<TimetableProvider>().clearWeeks();
+            Navigator.of(context).pop();
+            Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+          }
+        });
+      },
+      leadingIcon: Icon(
+        Icons.logout_rounded,
+        color: Theme.of(context).colorScheme.error,
       ),
-      leadingIcon: const Icon(Icons.color_lens_rounded),
-      titleText: 'Текущая тема',
-      subtitleText: themesTranscription[context.watch<ThemeProvider>().currentThemeName] ?? 'Неизвестна',
+      title: Text(
+        'Выйти',
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.error,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
+class _ListTileDivider extends StatelessWidget {
+  const _ListTileDivider({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 2,
+      color: Theme.of(context).colorScheme.secondary.withOpacity(0.5),
+    );
+  }
+}
+
+class _OpenControlPageListTile extends StatelessWidget {
+  const _OpenControlPageListTile({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return _SettingsListTile(
+      onTap: () {
+        Navigator.of(context).pop();
+        Navigator.of(context).pushNamed('/test');
+      },
+      leadingIcon: const Icon(Icons.edit_rounded),
+      titleText: 'Перейти в управление',
       trailing: const Icon(Icons.chevron_right_rounded),
+    );
+  }
+}
+
+class _SettingsBottomSheet extends StatelessWidget {
+  const _SettingsBottomSheet({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+      child: Material(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(4),
+        elevation: 4,
+        child: Wrap(
+          children: [
+            if (context.watch<AuthProvider>().authInfo.isAuthenticated) const _AuthInfoListTile(),
+            if (context.watch<AuthProvider>().authInfo.isAuthenticated) const _ListTileDivider(),
+            if (context.watch<AuthProvider>().authInfo.isAuthenticated && context.watch<AuthProvider>().authInfo.isAdmin)
+              const _OpenControlPageListTile(),
+            const _ConfigurationListTile(),
+            const _ThemeChoiceListTile(),
+            if (context.watch<AuthProvider>().authInfo.isAuthenticated) const _ExitListTile(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsExpansionTile extends StatelessWidget {
+  final Icon? leadingIcon;
+
+  final String? titleText;
+  final List<Widget> children;
+  const _SettingsExpansionTile({
+    Key? key,
+    this.leadingIcon,
+    this.titleText,
+    required this.children,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Theme.of(context).colorScheme.secondary.withOpacity(0.5)),
+      child: ExpansionTile(
+        iconColor: Theme.of(context).colorScheme.onSurface,
+        collapsedIconColor: Theme.of(context).colorScheme.onSurface,
+        leading: leadingIcon != null
+            ? Icon(
+                leadingIcon!.icon,
+                color: Theme.of(context).colorScheme.onSurface,
+              )
+            : null,
+        title: Transform(
+          transform: Matrix4.translationValues(-16, 0, 0),
+          child: Text(
+            titleText ?? '',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        children: children,
+      ),
+    );
+  }
+}
+
+class _SettingsListTile extends StatelessWidget {
+  final VoidCallback? onTap;
+
+  final Widget? leading;
+  final Icon? leadingIcon;
+  final Widget? title;
+  final String? titleText;
+  final String? subtitleText;
+  final Widget? trailing;
+  final EdgeInsets? contentPadding;
+  const _SettingsListTile({
+    Key? key,
+    this.onTap,
+    this.leading,
+    this.leadingIcon,
+    this.title,
+    this.titleText,
+    this.subtitleText,
+    this.trailing,
+    this.contentPadding,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      onTap: onTap,
+      minLeadingWidth: 0,
+      iconColor: Theme.of(context).colorScheme.onSurface,
+      leading: SizedBox(
+        height: double.infinity,
+        child: leading ?? leadingIcon,
+      ),
+      title: title ??
+          Text(
+            titleText ?? '',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+      subtitle: subtitleText != null
+          ? Text(
+              subtitleText ?? '',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
+            )
+          : null,
+      trailing: trailing,
+      contentPadding: contentPadding,
+    );
+  }
+}
+
+class _SettingsSwitchListTile extends StatelessWidget {
+  final bool value;
+
+  final void Function(bool) onChanged;
+  final Icon? leadingIcon;
+  final String? titleText;
+  final String? subtitleText;
+  const _SettingsSwitchListTile({
+    Key? key,
+    required this.value,
+    required this.onChanged,
+    this.leadingIcon,
+    this.titleText = '',
+    this.subtitleText,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      value: value,
+      onChanged: onChanged,
+      secondary: SizedBox(
+        height: double.infinity,
+        child: leadingIcon != null
+            ? Icon(
+                leadingIcon!.icon,
+                color: Theme.of(context).colorScheme.onSurface,
+              )
+            : null,
+      ),
+      title: Transform(
+        transform: Matrix4.translationValues(-16, 0, 0),
+        child: Text(
+          titleText ?? '',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      subtitle: subtitleText != null
+          ? Transform(
+              transform: Matrix4.translationValues(-16, 0, 0),
+              child: Text(
+                subtitleText ?? '',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
+          : null,
+      activeColor: Theme.of(context).colorScheme.primary,
+      inactiveThumbColor: Theme.of(context).colorScheme.surface,
     );
   }
 }
@@ -458,243 +670,29 @@ class _ThemeChoiceDialog extends StatelessWidget {
   }
 }
 
-class _ExitListTile extends StatelessWidget {
-  const _ExitListTile({Key? key}) : super(key: key);
+class _ThemeChoiceListTile extends StatelessWidget {
+  static Map<String, String> themesTranscription = {
+    'system': 'Как на устройстве',
+    'light': 'Светлая',
+    'dark': 'Тёмная',
+    'snow': 'Снежная',
+    'calm': 'Спокойная',
+    'random': 'Случайная',
+  };
+
+  const _ThemeChoiceListTile({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return _SettingsListTile(
-      onTap: () {
-        showDialog<bool>(context: context, builder: (context) => const _ConfirmExitDialog()).then((value) {
-          if (value == true) {
-            context.read<AuthProvider>().logout();
-            context.read<TimetableProvider>().clearWeeks();
-            Navigator.of(context).pop();
-            Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-          }
-        });
-      },
-      leadingIcon: Icon(
-        Icons.logout_rounded,
-        color: Theme.of(context).colorScheme.error,
+      onTap: () => showDialog(
+        context: context,
+        builder: (context) => const _ThemeChoiceDialog(),
       ),
-      title: Text(
-        'Выйти',
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.error,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-}
-
-class _ConfirmExitDialog extends StatelessWidget {
-  const _ConfirmExitDialog({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      contentPadding: const EdgeInsets.only(top: 20),
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      title: Text(
-        'Выйти из группы?',
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      // content: const _ListTileDivider(),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text(
-            'Нет',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: Text(
-            'Да',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.error,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SettingsListTile extends StatelessWidget {
-  const _SettingsListTile({
-    Key? key,
-    this.onTap,
-    this.leading,
-    this.leadingIcon,
-    this.title,
-    this.titleText,
-    this.subtitleText,
-    this.trailing,
-    this.contentPadding,
-  }) : super(key: key);
-
-  final VoidCallback? onTap;
-  final Widget? leading;
-  final Icon? leadingIcon;
-  final Widget? title;
-  final String? titleText;
-  final String? subtitleText;
-  final Widget? trailing;
-  final EdgeInsets? contentPadding;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      minLeadingWidth: 0,
-      iconColor: Theme.of(context).colorScheme.onSurface,
-      leading: SizedBox(
-        height: double.infinity,
-        child: leading ?? leadingIcon,
-      ),
-      title: title ??
-          Text(
-            titleText ?? '',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-      subtitle: subtitleText != null
-          ? Text(
-              subtitleText ?? '',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
-              ),
-            )
-          : null,
-      trailing: trailing,
-      contentPadding: contentPadding,
-    );
-  }
-}
-
-class _SettingsSwitchListTile extends StatelessWidget {
-  const _SettingsSwitchListTile({
-    Key? key,
-    required this.value,
-    required this.onChanged,
-    this.leadingIcon,
-    this.titleText = '',
-    this.subtitleText,
-  }) : super(key: key);
-
-  final bool value;
-  final void Function(bool) onChanged;
-  final Icon? leadingIcon;
-  final String? titleText;
-  final String? subtitleText;
-
-  @override
-  Widget build(BuildContext context) {
-    return SwitchListTile(
-      value: value,
-      onChanged: onChanged,
-      secondary: SizedBox(
-        height: double.infinity,
-        child: leadingIcon != null
-            ? Icon(
-                leadingIcon!.icon,
-                color: Theme.of(context).colorScheme.onSurface,
-              )
-            : null,
-      ),
-      title: Transform(
-        transform: Matrix4.translationValues(-16, 0, 0),
-        child: Text(
-          titleText ?? '',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      subtitle: subtitleText != null
-          ? Transform(
-              transform: Matrix4.translationValues(-16, 0, 0),
-              child: Text(
-                subtitleText ?? '',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            )
-          : null,
-      activeColor: Theme.of(context).colorScheme.primary,
-      inactiveThumbColor: Theme.of(context).colorScheme.surface,
-    );
-  }
-}
-
-class _SettingsExpansionTile extends StatelessWidget {
-  const _SettingsExpansionTile({
-    Key? key,
-    this.leadingIcon,
-    this.titleText,
-    required this.children,
-  }) : super(key: key);
-
-  final Icon? leadingIcon;
-  final String? titleText;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Theme.of(context).colorScheme.secondary.withOpacity(0.5)),
-      child: ExpansionTile(
-        iconColor: Theme.of(context).colorScheme.onSurface,
-        collapsedIconColor: Theme.of(context).colorScheme.onSurface,
-        leading: leadingIcon != null
-            ? Icon(
-                leadingIcon!.icon,
-                color: Theme.of(context).colorScheme.onSurface,
-              )
-            : null,
-        title: Transform(
-          transform: Matrix4.translationValues(-16, 0, 0),
-          child: Text(
-            titleText ?? '',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        children: children,
-      ),
-    );
-  }
-}
-
-class _ListTileDivider extends StatelessWidget {
-  const _ListTileDivider({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 2,
-      color: Theme.of(context).colorScheme.secondary.withOpacity(0.5),
+      leadingIcon: const Icon(Icons.color_lens_rounded),
+      titleText: 'Текущая тема',
+      subtitleText: themesTranscription[context.watch<ThemeProvider>().currentThemeName] ?? 'Неизвестна',
+      trailing: const Icon(Icons.chevron_right_rounded),
     );
   }
 }
